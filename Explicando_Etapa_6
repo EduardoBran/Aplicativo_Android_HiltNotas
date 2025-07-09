@@ -1,0 +1,131 @@
+Cada UseCase recebe uma dependência de NoteRepository (ao invés de NoteRepositoryImpl) em seu construtor porque:
+
+
+1. Princípio da Inversão de Dependência
+
+- Em vez de um caso de uso instanciar diretamente uma implementação concreta (como NoteRepositoryImpl), ele declara que precisa de algo que cumpra o contrato NoteRepository.
+
+- Isso torna seus casos de uso mais genéricos, testáveis e desacoplados de detalhes de persistência.
+
+
+
+2. Who provides a implementação?
+
+- No RepositoryModule.kt, você definiu:
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class RepositoryModule {
+  @Binds @Singleton
+  abstract fun bindNoteRepository(
+    impl: NoteRepositoryImpl
+  ): NoteRepository
+}
+
+- O Hilt usa essa anotação @Binds para saber “sempre que alguém pedir um NoteRepository, eu devo criar (ou reusar) um NoteRepositoryImpl”.
+
+
+
+3. Quando o NoteRepositoryImpl entra em cena?
+
+- Quando você injeta um caso de uso, por exemplo:
+
+class GetNotesUseCase @Inject constructor(
+  private val repository: NoteRepository
+) { … }
+
+- O Hilt vê que precisa instanciar GetNotesUseCase.
+
+- Para preencher o parâmetro repository: NoteRepository, ele busca no grafo quem pode prover esse tipo.
+
+- Pela regra @Binds, o provedor é NoteRepositoryImpl. Então o Hilt:
+
+	- 1. Cria (ou obtém) a instância singleton de NoteRepositoryImpl (injetando o NoteDao dentro dele).
+	- 2. Passa essa instância ao construtor do seu GetNotesUseCase.
+
+
+
+4. Por que usamos override em NoteRepositoryImpl?
+
+- A palavra-chave override em cada método garante que NoteRepositoryImpl implemente fielmente tudo o que o contrato NoteRepository pede.
+
+- É o mecanismo do Kotlin para assegurar que você não esqueça de fornecer nenhuma das operações declaradas na interface.
+
+
+
+
+*** Fluxo resumido de injeção:
+
+- 1. Hilt monta o SingletonComponent, registrando DatabaseModule e RepositoryModule.
+
+- 2. Quando algum @HiltViewModel ou classe marcada com @Inject precisa de um UseCase, o Hilt resolve primeiro esse objeto.
+
+- 3. Para criar o UseCase, ele precisa de um NoteRepository.
+
+- 4. Pelo binding do RepositoryModule, escolhe NoteRepositoryImpl para satisfazer essa dependência.
+
+- 5. NoteRepositoryImpl por sua vez recebe o NoteDao via DatabaseModule.
+
+6. Tudo é instanciado e injetado no lugar certo, sem você ter que chamar new em lugar nenhum.
+
+
+
+
+
+*** Sobre o RepositoryModule e DatabaseModule
+
+O RepositoryModule nunca é “chamado” manualmente em código: ele é descoberto e usado automaticamente pelo Hilt. Funciona assim:
+
+
+- 1. Anotação em MyApplication
+     Ao você ter no seu MyApplication:
+
+
+@HiltAndroidApp
+class MyApplication : Application()
+
+- o Hilt inicia o processamento de injeção de dependências no momento em que o app sobe.
+
+
+
+2. Processamento em tempo de compilação
+
+- O processador do Hilt (parte do plugin KAPT) escaneia todo o seu código em busca de módulos anotados com:
+
+@Module
+@InstallIn(SingletonComponent::class)
+
+- Isso inclui tanto o DatabaseModule quanto o RepositoryModule.
+
+
+
+3. Geração do grafo de dependências
+
+- Com base nessas anotações, o Hilt gera internamente classes que representam o SingletonComponent, ligando:
+
+	- NoteRepository → NoteRepositoryImpl (via seu @Binds no RepositoryModule)
+
+	- AppDatabase e NoteDao (via seus @Provides no DatabaseModule)
+
+
+
+4. Injeção em runtime
+   Quando você faz, por exemplo,
+
+@HiltViewModel
+class NotesListViewModel @Inject constructor(
+  private val getNotesUseCase: GetNotesUseCase
+) : ViewModel() { … }
+
+o Hilt:
+
+- 1. Vê que precisa construir um GetNotesUseCase.
+- 2. Esse UseCase pede um NoteRepository.
+- 3. Consulta o grafo e encontra que RepositoryModule.bindNoteRepository diz “use NoteRepositoryImpl”.
+- 4. Instancia NoteRepositoryImpl (injeções aninhadas: NoteDao vem do DatabaseModule).
+- 5. Finalmente injeta tudo no seu ViewModel.
+
+
+
+Em resumo, você não chama RepositoryModule em lugar nenhum: o Hilt identifica esse módulo em compile-time e o incorpora ao SingletonComponent que alimenta todas as injeções do seu app.
+
