@@ -1,6 +1,62 @@
 <?xml version="1.0" encoding="utf-8"?>
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
-             xmlns:app="http://schemas.android.com/apk/res-auto"
-             android:id="@+id/nav_graph">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/welcomeFragment">
+
+    <!-- Welcome Screen -->
+    <fragment
+        android:id="@+id/welcomeFragment"
+        android:name="com.luizeduardobrandao.hiltnotas.ui.welcome.WelcomeFragment"
+        android:label="@string/text_welcome"
+        tools:layout="@layout/fragment_welcome">
+
+        <action
+            android:id="@+id/action_welcome_to_list"
+            app:destination="@+id/notesListFragment" />
+
+    </fragment>
+
+
+    <!-- Notes List Screen -->
+    <fragment
+        android:id="@+id/notesListFragment"
+        android:name="com.luizeduardobrandao.hiltnotas.ui.noteslist.NotesListFragment"
+        android:label="@string/label_notes_list"
+        tools:layout="@layout/fragment_notes_list">
+
+        <action
+            android:id="@+id/action_list_to_edit"
+            app:destination="@+id/noteEditFragment">
+
+            <argument
+                android:name="noteId"
+                android:defaultValue="-1"
+                app:argType="long" />
+
+        </action>
+    </fragment>
+
+
+    <!-- Note Edit Screen -->
+    <fragment
+        android:id="@+id/noteEditFragment"
+        android:name="com.luizeduardobrandao.hiltnotas.ui.noteedit.NoteEditFragment"
+        android:label="@string/label_note_edit"
+        tools:layout="@layout/fragment_note_edit">
+
+        <argument
+            android:name="noteId"
+            android:defaultValue="-1"
+            app:argType="long" />
+
+    </fragment>
 
 </navigation>
+
+    <!--
+    Explicação: cada <fragment> tem um android:label que define o título da Toolbar.
+                As <action> conectam a tela de boas-vindas à lista, e da lista para edição,
+                passando noteId opcional.
+    -->
