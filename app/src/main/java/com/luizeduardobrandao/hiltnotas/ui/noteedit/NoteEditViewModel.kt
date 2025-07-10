@@ -78,7 +78,7 @@ class NoteEditViewModel @Inject constructor(
         saveNoteUseCase(entity)
     }
 
-    
+
     // Deleta a nota atualmente carregada.
     //    - Só executa se _note.value não for nulo
     //    - Chama deleteNoteUseCase para remover do repositório
