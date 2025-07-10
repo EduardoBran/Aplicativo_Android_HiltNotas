@@ -23,7 +23,7 @@ class NotesAdapter(
     // ViewHolder que mantém referências para os componentes de cada item.
     inner class NoteViewHolder(itemView: View): RecyclerView.ViewHolder(itemView) {
         val titleView: TextView = itemView.findViewById(R.id.textViewTitle)
-        val descriptionView: TextView = itemView.findViewById(R.id.textViewTitle)
+        val descriptionView: TextView = itemView.findViewById(R.id.textViewDescription)
         val checkBox: CheckBox = itemView.findViewById(R.id.checkBoxComplete)
     }
 
@@ -51,25 +51,27 @@ class NotesAdapter(
                 note.description
             }
 
-        // Checkbox
-        holder.checkBox.isChecked = note.isComplete
-
         // Clique no item (nota) inteira para editar
         holder.itemView.setOnClickListener {
             onItemClick(note)
         }
 
-        // Toggle do checkbox de completude
+        // 1) limpa o listener anterior
+        holder.checkBox.setOnCheckedChangeListener(null)
+
+        // 2) aplica o estado correto
+        holder.checkBox.isChecked = note.isComplete
+
+        // 3) registra o listener novo
         holder.checkBox.setOnCheckedChangeListener { _, isChecked ->
-            // Cria uma nova entidade com o estado invertido e chama o callback
             onToggleComplete(note.copy(isComplete = isChecked))
         }
+    }
 
-        // Atualiza a lista de notas e notifica o adapter.
-        fun submitList(newNotes: List<NoteEntity>) {
-            notes = newNotes
-            notifyDataSetChanged()
-        }
+    // Atualiza a lista de notas e notifica o adapter.
+    fun submitList(newNotes: List<NoteEntity>) {
+        notes = newNotes
+        notifyDataSetChanged()
     }
 }
 

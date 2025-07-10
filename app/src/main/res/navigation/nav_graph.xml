@@ -43,7 +43,7 @@
     <fragment
         android:id="@+id/noteEditFragment"
         android:name="com.luizeduardobrandao.hiltnotas.ui.noteedit.NoteEditFragment"
-        android:label="@string/label_note_edit"
+        android:label="@string/label_new_note"
         tools:layout="@layout/fragment_note_edit">
 
         <argument

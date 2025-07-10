@@ -7,13 +7,20 @@
 
     <!-- Notes List Fragment -->
     <string name="cont_add">Adicionar Nota</string>
-    <string name="label_notes_list">Adicionar Nota</string>
+    <string name="label_notes_list">Notas</string>
 
     <!-- Note Edit Fragment -->
     <string name="hint_title">Título</string>
     <string name="hint_description">Descrição</string>
     <string name="check_complete">Completa</string>
     <string name="btn_save">Salvar</string>
+
     <string name="label_note_edit">Editar Nota</string>
+    <string name="label_new_note">Adicionar Nota</string>
+
+    <string name="menu_delete">Deletar</string>
+
+    <string name="msg_saved">Nota salva!</string>
+    <string name="msg_deleted">Nota deletada!</string>
 
 </resources>
