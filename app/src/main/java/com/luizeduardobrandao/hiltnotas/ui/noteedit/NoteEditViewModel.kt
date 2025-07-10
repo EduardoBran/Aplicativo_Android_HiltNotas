@@ -12,7 +12,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-// * ViewModel responsável por gerenciar a tela de criação/edição de uma nota.
+// * ViewModel responsável por:
+//    - carregar uma nota existente (ou iniciar uma nova)
+//    - manter o estado da nota e do formulário
+//    - validar inputs
+//    - salvar ou deletar a nota via casos de uso
 
 @HiltViewModel
 class NoteEditViewModel @Inject constructor(
@@ -24,51 +28,63 @@ class NoteEditViewModel @Inject constructor(
     private val deleteNoteUseCase: DeleteNoteUseCase
 ) : ViewModel() {
 
-    // Estado interno que mantém a nota atual (ou null se for novo registro)
+    // Estado interno que armazena a nota carregada (ou null para nova)
     private val _note = MutableStateFlow<NoteEntity?>(null)
     // StateFlow público para a UI observar mudanças na nota carregada.
     val note: StateFlow<NoteEntity?> = _note
 
+    // Estado interno para sinalizar se o formulário está válido
+    private val _isFormValid = MutableStateFlow<Boolean>(false)
+    // Exposição imutável para a UI observar a validação do formulário
+    val isFormValid: StateFlow<Boolean> = _isFormValid
 
-    // Carrega do banco a nota com o ID informado.
-    // - Se o ID for inválido (por exemplo -1), nenhuma alteração acontece.
-    fun loadNote(id: Long) {
-        viewModelScope.launch {
 
-            // Coleta o Flow retornado pelo caso de uso e atualiza o StateFlow
-            getNoteUseCase(id).collect{ fetchedNote ->
-                _note.value = fetchedNote
+    // Carrega uma nota em modo edição.
+    //    - Executa getNoteUseCase(id), que retorna um Flow<NoteEntity?>
+    //    - Coleta o resultado e atualiza _note
+    //    - Se a nota não for nula, chama onInputChanged para pré-preencher e validar
+    fun loadNote(id: Long) = viewModelScope.launch {
+        getNoteUseCase(id)
+            .collect{ loaded ->
+                // Atualiza o StateFlow com a nota retornada
+                _note.value = loaded
             }
-        }
+        // Após carregar, usa os valores para atualizar e validar o formulário
+        _note.value?.let { onInputChanged(it.title, it.description) }
     }
 
-    // Consolida os campos de entrada (título, descrição, completude) em uma entidade NoteEntity
-    // e dispara o caso de uso de salvamento.
-    //     - Se _note.value for null, assume-se criação (id = 0L).
-    //     - Se _note.value contiver uma nota existente, usa seu id para atualização.
-    fun save(title: String, description: String, isComplete: Boolean){
 
-        val existing = _note.value
-        val entity = NoteEntity(
-            id = existing?.id ?: 0L,
+    // Recebe cada mudança nos campos de título e descrição.
+    //    - Atualiza _isFormValid para true somente se ambos não estiverem em branco.
+    fun onInputChanged(title: String, description: String) {
+        _isFormValid.value = title.isNotBlank() && description.isNotBlank()
+    }
+
+
+    // Salva a nota (novo registro ou atualização).
+    //    - Cria uma cópia de NoteEntity usando valores atuais se já existir
+    //    - Caso contrário, instancia um novo NoteEntity
+    //    - Chama saveNoteUseCase para persistir
+    fun save(title: String, description: String, isComplete: Boolean) = viewModelScope.launch {
+        val entity = _note.value?.copy(
+            title = title,
+            description = description,
+            isComplete = isComplete
+        ) ?: NoteEntity(
             title = title,
             description = description,
             isComplete = isComplete
         )
-
-        viewModelScope.launch {
-            // Chama o caso de uso que retorna o ID gerado ou existente
-            saveNoteUseCase(entity)
-        }
+        saveNoteUseCase(entity)
     }
 
-    // Deleta a nota atualmente carregada, se existir.
-    fun delete(){
-        _note.value?.let { currentNote ->
-            viewModelScope.launch {
-                // Chama o caso de uso de exclusão
-                deleteNoteUseCase(currentNote)
-            }
+    
+    // Deleta a nota atualmente carregada.
+    //    - Só executa se _note.value não for nulo
+    //    - Chama deleteNoteUseCase para remover do repositório
+    fun delete() = viewModelScope.launch {
+        _note.value?.let { toDelete ->
+            deleteNoteUseCase(toDelete)
         }
     }
 }
