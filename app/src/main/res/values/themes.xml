@@ -6,4 +6,13 @@
     </style>
 
     <style name="Theme.HiltNotas" parent="Base.Theme.HiltNotas" />
+
+    <!-- Overlay específico para toolbars -->
+    <style name="ToolbarOverlay" parent="ThemeOverlay.MaterialComponents.Toolbar.Primary">
+        <!-- garante que a navigation icon (seta) seja tintada de branco -->
+        <item name="android:background">@color/colorPrimary</item>
+        <item name="titleTextColor">@color/white</item>
+        <item name="navigationIconTint">@color/white</item>
+        <item name="iconTint">@color/white</item>
+    </style>
 </resources>
